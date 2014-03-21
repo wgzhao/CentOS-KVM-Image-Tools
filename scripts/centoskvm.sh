@@ -61,31 +61,31 @@ fi
 IMGNAME=$1
 
 # default kickstart file
-KICKSTART="centos6x-vm-gpt-selinux.cfg"
+KICKSTART="centos6x-vm-gpt-noselinux.cfg"
 
 # VM image file extension
 EXT="qcow2"
 
 echo "Generating VM ..."
-
+dispath='/vms'
 # create image file
 virt-install \
 --name $IMGNAME \
---ram 512 \
+--ram 8192 \
 --cpu host \
---vcpus 1 \
+--vcpus 24 \
 --nographics \
 --os-type=linux \
 --os-variant=rhel6 \
---location=http://mirror.catn.com/pub/centos/6/os/x86_64 \
+--location=http://192.168.1.243/centos/6.4/os/x86_64 \
 --initrd-inject=../kickstarts/$KICKSTART \
 --extra-args="ks=file:/$KICKSTART text console=tty0 utf8 console=ttyS0,115200" \
---disk path=/var/lib/libvirt/images/$IMGNAME.$EXT,size=10,bus=virtio,format=qcow2 \
+--disk path=${diskpath}/$IMGNAME.$EXT,size=10,bus=virtio,format=qcow2 \
 --force \
 --noreboot
 
 # change directory
-cd /var/lib/libvirt/images/
+cd ${diskpath}
 
 # reset, unconfigure a virtual machine so clones can be made
 virt-sysprep --format=qcow2 --no-selinux-relabel -a $IMGNAME.$EXT
