@@ -59,15 +59,17 @@ fi
 
 # name of the image
 IMGNAME=$1
-
+ip=${2-'192.168.1.71'}
+disksize=${3-"750"}
 # default kickstart file
 KICKSTART="centos6x-vm-gpt-noselinux.cfg"
-
+#replace ip
+sed -i "s/192.168.1.71/$ip/g" ../kickstarts/$KICKSTART 
 # VM image file extension
 EXT="qcow2"
 
 echo "Generating VM ..."
-dispath='/vms'
+diskpath='/vms'
 # create image file
 virt-install \
 --name $IMGNAME \
@@ -80,7 +82,7 @@ virt-install \
 --location=http://192.168.1.243/centos/6.4/os/x86_64 \
 --initrd-inject=../kickstarts/$KICKSTART \
 --extra-args="ks=file:/$KICKSTART text console=tty0 utf8 console=ttyS0,115200" \
---disk path=${diskpath}/$IMGNAME.$EXT,size=10,bus=virtio,format=qcow2 \
+--disk path=${diskpath}/$IMGNAME.$EXT,size=${disksize},bus=virtio,format= \
 --force \
 --noreboot
 
@@ -88,22 +90,22 @@ virt-install \
 cd ${diskpath}
 
 # reset, unconfigure a virtual machine so clones can be made
-virt-sysprep --format=qcow2 --no-selinux-relabel -a $IMGNAME.$EXT
+#virt-sysprep --format=qcow2 --no-selinux-relabel -a $IMGNAME.$EXT
 
 # SELinux: relabelling all filesystem
-guestfish --selinux -i $IMGNAME.$EXT <<EOF
-sh load_policy
-sh 'restorecon -R -v /'
-EOF
+#guestfish --selinux -i $IMGNAME.$EXT <<EOF
+#sh load_policy
+#sh 'restorecon -R -v /'
+#EOF
 
 # make a virtual machine disk sparse
-virt-sparsify --compress --convert qcow2 --format qcow2 $IMGNAME.$EXT $IMGNAME-sparsified.$EXT
+#virt-sparsify --compress --convert qcow2 --format qcow2 $IMGNAME.$EXT $IMGNAME-sparsified.$EXT
 
 # remove original image
-rm -rf $IMGNAME.$EXT
+#rm -rf $IMGNAME.$EXT
 
 # rename sparsified
-mv $IMGNAME-sparsified.$EXT $IMGNAME.$EXT
+#mv $IMGNAME-sparsified.$EXT $IMGNAME.$EXT
 
 # set correct ownership for the VM image file
 chown qemu:qemu $IMGNAME.$EXT
