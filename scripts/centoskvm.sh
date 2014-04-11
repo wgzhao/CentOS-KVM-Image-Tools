@@ -44,27 +44,58 @@
 
 # USAGE EXAMPLE:
 # sh centoskvm.sh centos-gold-master
-
+usage()
+{
+	echo "$0 [options] "
+	echo """
+	Options:
+	-n			guest name
+	-m			memory size in GB
+	-i			IP Address for guest
+	-c			Netmask(defualt is 255.255.255.0)
+	-s			disk size in GB
+	-d			the path placed image(default is /vms)
+	-h			print help
+	"""
+	exit 1
+}
+if [ $# -le 0 ];then
+	usage
+fi
 # ensure script is being run as root
 if [ `whoami` != root ]; then
    echo "ERROR: This script must be run as root" 1>&2
    exit 1
 fi
+## default options
+diskpath='/vms'
+netmask='255.255.255.0'
+gateway='192.168.1.1'
+while getopts "n:m:i:cs:d" opt
+do
+	case $opt in
+	n) IMGNAME=$OPTARG
+	;;
+	m) MEMSIZE=$OPTARG
+	;;
+	i) IP=$OPTARG
+	;;
+	c) netmask=$OPTARG
+	;;
+	s) DISKSIZE=$OPTARG
+	;;
+	d) diskpath=$OPTARG
+	;;
+	h) usage
+	;;
+	*) usage
+	;;
+	esac
+done
 
-# check for image name
-if [ -z "$1" ]; then
-	echo "ERROR: No argument supplied. Please provide the image name."
-	exit 1
-fi
-
-# name of the image
-IMGNAME=$1
-ip=${2-'192.168.1.71'}
-disksize=${3-"750"}
-# default kickstart file
 KICKSTART="centos6x-vm-gpt-noselinux.cfg"
 #replace ip
-sed -i "s/192.168.1.71/$ip/g" ../kickstarts/$KICKSTART 
+sed -i "s/{{IP}}/$IP/g; s/{{NETMASK}}/$netmask/g; s/{{GATEWAY}}/$gateway/g" ../kickstarts/$KICKSTART 
 # VM image file extension
 EXT="qcow2"
 
@@ -73,7 +104,7 @@ diskpath='/vms'
 # create image file
 virt-install \
 --name $IMGNAME \
---ram 8192 \
+--ram $MEMSIZE \
 --cpu host \
 --vcpus 24 \
 --nographics \
@@ -108,7 +139,7 @@ cd ${diskpath}
 #mv $IMGNAME-sparsified.$EXT $IMGNAME.$EXT
 
 # set correct ownership for the VM image file
-chown qemu:qemu $IMGNAME.$EXT
+chown qemu:qemu ${diskpath}/$IMGNAME.$EXT
 
 echo "Process Completed. Use the 'virt start $IMGNAME' command to start the newly created VM."
 
